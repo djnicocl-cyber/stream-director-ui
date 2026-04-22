@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stream Director</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <h1>Stream <span>Director</span></h1>
+  </div>
+  <div class="flex items-center gap-12">
+    <div class="signal-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="text-xs text-muted" style="letter-spacing:1px;text-transform:uppercase;">Live Control System</span>
+  </div>
+</header>
+
+<main class="page-center">
+
+  <div class="text-center" style="margin-bottom:48px;">
+    <div style="font-size:64px;margin-bottom:16px;">🎬</div>
+    <h2 style="font-size:28px;font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">
+      Selecciona tu rol
+    </h2>
+    <p class="text-muted text-sm">Elige cómo participas en la transmisión en vivo</p>
+  </div>
+
+  <div id="roomSetup" style="width:100%;max-width:420px;margin-bottom:40px;">
+    <div class="card">
+      <div class="card-header">📋 Sala de transmisión</div>
+      <div class="form-group">
+        <label>ID de la Sala</label>
+        <input type="text" id="roomIdInput" placeholder="Ej: sala-principal" />
+        <p class="text-xs text-muted mt-8">Todos los participantes deben usar el mismo ID de sala</p>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-outline w-full" onclick="createRoom()">
+          ➕ Crear sala
+        </button>
+      </div>
+      <div id="roomAlert" class="hidden mt-16"></div>
+      <div id="roomInfo" class="hidden mt-16">
+        <div class="alert alert-success">
+          ✅ Sala lista: <strong id="roomIdDisplay"></strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="role-grid" id="roleGrid">
+
+    <a href="operator.html" class="role-card operator" id="linkOperator" onclick="return saveRoom()">
+      <span class="role-icon">🎛️</span>
+      <div class="role-title">Operador</div>
+      <div class="role-desc">
+        Controla la transmisión en vivo. Ve a todos los streamers conectados y elige quién sale al aire.
+      </div>
+    </a>
+
+    <a href="streamer.html" class="role-card streamer" id="linkStreamer" onclick="return saveRoom()">
+      <span class="role-icon">🎤</span>
+      <div class="role-title">Streamer</div>
+      <div class="role-desc">
+        Únete a la sala y activa tu cámara. El operador decidirá cuándo salir al aire.
+      </div>
+    </a>
+
+    <a href="screen.html" class="role-card screen" id="linkScreen" onclick="return saveRoom()">
+      <span class="role-icon">📺</span>
+      <div class="role-title">Pantalla</div>
+      <div class="role-desc">
+        Vista de exhibición. Muestra en pantalla grande al streamer seleccionado por el operador.
+      </div>
+    </a>
+
+  </div>
+
+  <p class="text-xs text-muted mt-24" style="letter-spacing:1px;text-transform:uppercase;">
+    Powered by LiveKit · Stream Director v2
+  </p>
+
+</main>
+
+<script>
+  const BACKEND = 'https://stream-director-backend-v2-production.up.railway.app';
+
+  // Load saved room
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('sd_room_id');
+    if (saved) {
+      document.getElementById('roomIdInput').value = saved;
+      showRoomInfo(saved);
+    }
+  });
+
+  async function createRoom() {
+    const id = document.getElementById('roomIdInput').value.trim();
+    const alertEl = document.getElementById('roomAlert');
+    alertEl.className = 'hidden';
+
+    try {
+      const res = await fetch(BACKEND + '/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: id || undefined })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+
+      const roomId = data.roomId;
+      document.getElementById('roomIdInput').value = roomId;
+      localStorage.setItem('sd_room_id', roomId);
+      showRoomInfo(roomId);
+    } catch(e) {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = '❌ ' + e.message;
+    }
+  }
+
+  function showRoomInfo(id) {
+    document.getElementById('roomIdDisplay').textContent = id;
+    document.getElementById('roomInfo').className = '';
+  }
+
+  function saveRoom() {
+    const id = document.getElementById('roomIdInput').value.trim();
+    if (!id) {
+      alert('Primero crea o ingresa un ID de sala');
+      return false;
+    }
+    localStorage.setItem('sd_room_id', id);
+    return true;
+  }
+</script>
+
+</body>
+</html>
